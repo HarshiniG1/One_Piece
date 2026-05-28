@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONE PIECE AR — Devil Fruit Powers</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Oswald:wght@700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    font-family: 'Oswald', sans-serif;
+    overflow: hidden;
+    color: #fff;
+  }
+
+  #app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* INTRO SCREEN */
+  #intro {
+    position: absolute;
+    inset: 0;
+    background: #0a0a0f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    gap: 24px;
+  }
+
+  #intro h1 {
+    font-family: 'Bangers', cursive;
+    font-size: clamp(3rem, 8vw, 7rem);
+    letter-spacing: 6px;
+    color: #FFD700;
+    text-shadow: 4px 4px 0 #c00, 8px 8px 0 #600;
+    animation: titlePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes titlePulse {
+    0%, 100% { text-shadow: 4px 4px 0 #c00, 8px 8px 0 #600; }
+    50% { text-shadow: 4px 4px 0 #ff4400, 8px 8px 0 #c00, 0 0 40px #FFD700; }
+  }
+
+  #intro p {
+    font-size: 1.2rem;
+    color: #aaa;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  #intro .subtitle {
+    font-family: 'Bangers', cursive;
+    font-size: 1.6rem;
+    color: #ff6600;
+    letter-spacing: 4px;
+  }
+
+  #startBtn {
+    margin-top: 16px;
+    padding: 16px 48px;
+    background: #FFD700;
+    color: #0a0a0f;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Bangers', cursive;
+    font-size: 1.8rem;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 4px 4px 0 #c00;
+  }
+  #startBtn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #c00;
+  }
+  #startBtn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 #c00;
+  }
+
+  /* CAMERA + CANVAS */
+  #videoContainer {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  #webcam {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+  }
+
+  #canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(-1);
+  }
+
+  /* CHARACTER SELECTOR */
+  #charSelector {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 10;
+    background: rgba(0,0,0,0.6);
+    padding: 12px 20px;
+    border-radius: 50px;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+  }
+
+  .charBtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 40px;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.07);
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #fff;
+  }
+
+  .charBtn .icon { font-size: 1.8rem; }
+  .charBtn .name { font-family: 'Bangers', cursive; font-size: 0.95rem; letter-spacing: 2px; }
+
+  .charBtn.active {
+    background: rgba(255, 215, 0, 0.15);
+    border-color: #FFD700;
+    box-shadow: 0 0 12px rgba(255,215,0,0.4);
+  }
+
+  .charBtn[data-char="luffy"].active { border-color: #ff4400; background: rgba(255,68,0,0.15); box-shadow: 0 0 12px rgba(255,68,0,0.5); }
+  .charBtn[data-char="robin"].active { border-color: #a855f7; background: rgba(168,85,247,0.15); box-shadow: 0 0 12px rgba(168,85,247,0.5); }
+  .charBtn[data-char="zoro"].active  { border-color: #22c55e; background: rgba(34,197,94,0.15); box-shadow: 0 0 12px rgba(34,197,94,0.5); }
+
+  /* STATUS */
+  #status {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-family: 'Bangers', cursive;
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    color: #FFD700;
+    background: rgba(0,0,0,0.5);
+    padding: 6px 20px;
+    border-radius: 20px;
+    text-shadow: 1px 1px 0 #c00;
+  }
+
+  /* POWER LABEL */
+  #powerLabel {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-family: 'Bangers', cursive;
+    font-size: 2.5rem;
+    letter-spacing: 5px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+  #powerLabel.visible { opacity: 1; }
+
+  /* LOADING */
+  #loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    gap: 16px;
+    display: none;
+  }
+  #loading.active { display: flex; }
+  #loading p { font-family: 'Bangers', cursive; font-size: 1.5rem; letter-spacing: 3px; color: #FFD700; }
+  .spinner {
+    width: 50px; height: 50px;
+    border: 4px solid rgba(255,215,0,0.2);
+    border-top-color: #FFD700;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- INTRO -->
+  <div id="intro">
+    <h1>ONE PIECE AR</h1>
+    <p class="subtitle">Devil Fruit Powers Activated</p>
+    <p>Use your webcam to unleash Luffy's powers</p>
+    <button id="startBtn" onclick="startApp()">⚓ Set Sail!</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Loading MediaPipe...</p>
+  </div>
+
+  <!-- CAMERA VIEW -->
+  <div id="videoContainer" style="display:none">
+    <video id="webcam" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+
+    <div id="status">🖐 Raise your hands!</div>
+    <div id="powerLabel">GOMU GOMU NO PISTOL!</div>
+
+    <div id="charSelector">
+      <button class="charBtn active" data-char="luffy" onclick="selectChar('luffy')">
+        <span class="icon">🍖</span>
+        <span class="name">LUFFY</span>
+      </button>
+      <button class="charBtn" data-char="robin" onclick="selectChar('robin')">
+        <span class="icon">📖</span>
+        <span class="name">ROBIN</span>
+      </button>
+      <button class="charBtn" data-char="zoro" onclick="selectChar('zoro')">
+        <span class="icon">⚔️</span>
+        <span class="name">ZORO</span>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+
+<script>
+let hands, camera;
+let currentChar = 'luffy';
+
+const videoEl = document.getElementById('webcam');
+const canvasEl = document.getElementById('canvas');
+const ctx = canvasEl.getContext('2d');
+
+canvasEl.width = window.innerWidth;
+canvasEl.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
+  canvasEl.width = window.innerWidth;
+  canvasEl.height = window.innerHeight;
+});
+
+const handData = {
+  left: createHandState(),
+  right: createHandState()
+};
+
+function createHandState() {
+  return {
+    prevPalm: null,
+    velocity: 0,
+    stretch: 0,
+    fistScale: 1,
+    trail: [],
+    impact: 0
+  };
+}
+
+function lm(landmarks, i) {
+  return {
+    x: (1 - landmarks[i].x) * canvasEl.width,
+    y: landmarks[i].y * canvasEl.height
+  };
+}
+
+function dist(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function isClosedFist(landmarks) {
+  const tips = [8, 12, 16, 20];
+  const mids = [6, 10, 14, 18];
+
+  let closed = 0;
+
+  for (let i = 0; i < tips.length; i++) {
+    if (landmarks[tips[i]].y > landmarks[mids[i]].y) {
+      closed++;
+    }
+  }
+
+  return closed >= 3;
+}
+
+function isOpenHand(landmarks) {
+  const tips = [8, 12, 16, 20];
+  const bases = [5, 9, 13, 17];
+
+  let open = 0;
+
+  for (let i = 0; i < tips.length; i++) {
+    if (landmarks[tips[i]].y < landmarks[bases[i]].y) {
+      open++;
+    }
+  }
+
+  return open >= 3;
+}
+
+function getPalm(landmarks) {
+  const wrist = lm(landmarks, 0);
+  const middle = lm(landmarks, 9);
+
+  return {
+    x: (wrist.x + middle.x) / 2,
+    y: (wrist.y + middle.y) / 2
+  };
+}
+
+function drawSkeleton(landmarks) {
+  const connections = [
+    [0,1],[1,2],[2,3],[3,4],
+    [0,5],[5,6],[6,7],[7,8],
+    [0,9],[9,10],[10,11],[11,12],
+    [0,13],[13,14],[14,15],[15,16],
+    [0,17],[17,18],[18,19],[19,20]
+  ];
+
+  ctx.save();
+
+  ctx.strokeStyle = "#ff7b00";
+  ctx.lineWidth = 3;
+  ctx.shadowColor = "#ff6600";
+  ctx.shadowBlur = 15;
+
+  for (const [a,b] of connections) {
+    const pa = lm(landmarks, a);
+    const pb = lm(landmarks, b);
+
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.lineTo(pb.x, pb.y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function getStretch(landmarks){
+    const wrist = lm(landmarks, 0);
+    const index = lm(landmarks, 8);
+    const middle = lm(landmarks, 12);
+
+    //better 'arm extension direction'
+    const fingerTip ={
+        x: (index.x + middle.x) / 2,
+        y: (index.y +middle.y) / 2
+    };
+
+    const palmCenter = {
+        x: (lm(landmarks, 5).x + wrist.x) / 2,
+        y: (lm(landmarks, 5).y + wrist.y)/2
+    };
+
+    const stretch = dist(wrist, fingerTip);
+    const base = dist(wrist, palmCenter)+1;
+
+    return stretch / base;
+
+}
+function drawLuffyEffect(landmarks, side) {
+
+  
+
+  const data = handData[side];
+
+  const wrist = lm(landmarks, 0);
+  const palm = getPalm(landmarks);
+
+  const middleTip = lm(landmarks, 12);
+
+  const open = isOpenHand(landmarks);
+  const closed = isClosedFist(landmarks);
+
+  // HAND SPEED
+  if (data.prevPalm) {
+    const movement = dist(palm, data.prevPalm);
+    data.velocity = lerp(data.velocity, movement, 0.25);
+  }
+
+  data.prevPalm = palm;
+
+  // STRETCH VALUE
+  const stretchTarget = Math.min(getStretch(landmarks), 2.2);
+  data.stretch = lerp(data.stretch, stretchTarget, 0.15);
+
+  // DIRECTION VECTOR
+  const dx = middleTip.x - wrist.x;
+  const dy = middleTip.y - wrist.y;
+
+  const length = Math.hypot(dx, dy);
+
+  const dirX = dx / length;
+  const dirY = dy / length;
+
+  // EXTENDED ARM LENGTH
+  let armLength = 0;
+
+  if (closed) {
+    armLength = data.stretch * 120;
+  }
+
+  // NEW HAND POSITION
+  const extendedPalm = {
+    x: palm.x + dirX * armLength,
+    y: palm.y + dirY * armLength
+  };
+
+  // DRAW ARM
+  if (closed) {
+
+    ctx.save();
+
+    ctx.strokeStyle = "#f5c9a5";
+    ctx.lineWidth = 45;
+    ctx.lineCap = "round";
+
+    ctx.beginPath();
+    ctx.moveTo(wrist.x, wrist.y);
+    ctx.lineTo(extendedPalm.x, extendedPalm.y);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // DRAW GIANT HAND
+  let fistSize = 40;
+
+  if (closed) {
+    fistSize += data.stretch * 55;
+  }
+
+  data.fistScale = lerp(
+    data.fistScale,
+    fistSize,
+    0.2
+  );
+
+  // HAND
+  ctx.save();
+
+  ctx.fillStyle = "#f5c9a5";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    extendedPalm.x,
+    extendedPalm.y,
+    data.fistScale,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+  ctx.restore();
+
+  // IMPACT PARTICLES
+  if (closed && data.velocity > 30) {
+
+    for (let i = 0; i < 12; i++) {
+
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 70;
+
+      ctx.fillStyle = "#ffffff";
+
+      ctx.beginPath();
+
+      ctx.arc(
+        extendedPalm.x + Math.cos(angle) * radius,
+        extendedPalm.y + Math.sin(angle) * radius,
+        3 + Math.random() * 5,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+    }
+
+    document.getElementById("powerLabel").innerText =
+      "👊 GOMU GOMU NO PISTOL!";
+
+    document.getElementById("powerLabel")
+      .classList.add("visible");
+  }
+
+  // OPEN HAND MODE
+  if (open && !closed) {
+
+    document.getElementById("powerLabel").innerText =
+      "🌀 GEAR STRETCH";
+
+    document.getElementById("powerLabel")
+      .classList.add("visible");
+  }
+
+  // OPTIONAL SKELETON
+  drawSkeleton(landmarks);
+}
+function onResults(results) {
+
+  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+  if (!results.multiHandLandmarks) return;
+
+  for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+
+    const landmarks = results.multiHandLandmarks[i];
+
+    const handedness =
+      results.multiHandedness[i].label === "Right"
+        ? "left"
+        : "right";
+
+    drawLuffyEffect(landmarks, handedness);
+  }
+}
+
+async function initMediaPipe() {
+
+  hands = new Hands({
+    locateFile: file =>
+      `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+
+  hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.75,
+    minTrackingConfidence: 0.75
+  });
+
+  hands.onResults(onResults);
+
+  camera = new Camera(videoEl, {
+
+    onFrame: async () => {
+      await hands.send({
+        image: videoEl
+      });
+    },
+
+    width: 1280,
+    height: 720
+  });
+
+  await camera.start();
+
+  document.getElementById("loading")
+    .classList.remove("active");
+
+  document.getElementById("videoContainer")
+    .style.display = "block";
+}
+
+function startApp() {
+
+  document.getElementById("intro")
+    .style.display = "none";
+
+  document.getElementById("loading")
+    .classList.add("active");
+
+  initMediaPipe();
+}
+
+function selectChar(char){
+    currentChar = char;
+
+    document.querySelectorAll('.charBtn').forEach(btn => {
+        btn.classList.remove('active');
+
+    });
+
+    document
+     .querySelector(`[data-char="${char}"]`)
+     .classList.add('active');
+}
+</script>
+
+
+</body>
+</html>
